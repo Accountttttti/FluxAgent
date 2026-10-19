@@ -83,6 +83,6 @@ def summary(exclude: set[str] | None = None) -> str:
         meta = parse_frontmatter(content)
         desc = meta.get("description") or entry["name"]
         lines.append(
-            f"- **{entry['name']}** — {desc}  `skills/{entry['name']}/SKILL.md`"
+            f"- **{entry['name']}** — {desc}  `backend/skills/{entry['name']}/SKILL.md`"
         )
     return "\n".join(lines)

@@ -25,7 +25,7 @@ def build_system_prompt() -> str:
     parts = [
         "你是 FluxAgent，一个个人 AI 助手。\n"
         "你有两类能力：\n"
-        "- 工具（Tools）：可以直接调用的函数（get_current_time、run_python、run_command、read_file、save_memory、search_history）。\n"
+        "- 工具（Tools）：可以直接调用的函数（get_current_time、run_python、exec_session、run_command、read_file、write_file、edit_file、list_dir、find_files、grep、apply_patch、web_fetch、save_memory、search_history、subagent、cron）。\n"
         "- 技能（Skills）：Markdown 说明书。遇到相关任务时，先用 read_file 读取技能正文，再照着执行。",
     ]
 
@@ -88,6 +88,68 @@ def complete(prompt: str) -> str:
         messages=[{"role": "user", "content": prompt}],
     )
     return resp.choices[0].message.content or ""
+
+
+SUBAGENT_SYSTEM = (
+    "你是 FluxAgent 的一个子代理（subagent）。"
+    "主代理派你独立完成一个任务。你可以调用工具。"
+    "完成任务后，直接输出任务的结果本身——不要向主代理提问，也不要复述你做了哪些步骤。"
+)
+
+SUBAGENT_MAX_TURNS = 6
+
+
+def run_subagent(task: str) -> str:
+    """子代理：独立跑一个非流式 agent 循环，完成一个任务，返回最终文本。
+
+    和 stream_chat 的区别：不流式、用自己的系统提示词、拿不到 subagent 工具
+    （防止子代理再开子代理导致无限递归）、有轮数上限。
+    """
+    if not os.getenv("DEEPSEEK_API_KEY"):
+        return f"（mock 模式）子代理需要真实 key 才能运行。收到任务：{task}"
+
+    conversation = [
+        {"role": "system", "content": SUBAGENT_SYSTEM},
+        {"role": "user", "content": task},
+    ]
+    # 过滤掉 subagent 本身，防止无限嵌套
+    defs = [t for t in TOOLS.get_definitions() if t["function"]["name"] != "subagent"]
+
+    for _ in range(SUBAGENT_MAX_TURNS):
+        resp = _get_client().chat.completions.create(
+            model=MODEL,
+            messages=conversation,
+            tools=defs,
+        )
+        msg = resp.choices[0].message
+        if not msg.tool_calls:
+            return msg.content or "（子代理没有返回内容）"
+
+        conversation.append(
+            {
+                "role": "assistant",
+                "content": None,
+                "tool_calls": [
+                    {
+                        "id": tc.id,
+                        "type": "function",
+                        "function": {"name": tc.function.name, "arguments": tc.function.arguments},
+                    }
+                    for tc in msg.tool_calls
+                ],
+            }
+        )
+        for tc in msg.tool_calls:
+            try:
+                args = json.loads(tc.function.arguments) if tc.function.arguments else {}
+            except json.JSONDecodeError:
+                args = {}
+            result = TOOLS.execute(tc.function.name, args)
+            conversation.append(
+                {"role": "tool", "tool_call_id": tc.id, "content": result}
+            )
+
+    return "（子代理达到最大轮数，仍没给出最终回答）"
 
 
 def _stream_mock() -> Iterator[dict]:
