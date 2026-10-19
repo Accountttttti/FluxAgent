@@ -1,9 +1,20 @@
+from contextlib import asynccontextmanager
+
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
+import mcp_loader
 from chat import router as chat_router
 
-app = FastAPI(title="FluxAgent")
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    # 启动时把 mcp.json 里的外部工具加载进全局工具表
+    await mcp_loader.load_all()
+    yield
+
+
+app = FastAPI(title="FluxAgent", lifespan=lifespan)
 
 app.add_middleware(
     CORSMiddleware,

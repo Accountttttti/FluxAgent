@@ -10,6 +10,17 @@ export interface StreamHandlers {
   onTool?: (name: string) => void
 }
 
+export async function dream(): Promise<string> {
+  const res = await fetch('/api/dream', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({}),
+  })
+  if (!res.ok) throw new Error(`请求失败（${res.status}）`)
+  const data = (await res.json()) as { result: string }
+  return data.result
+}
+
 export async function streamChat(
   messages: ApiMessage[],
   handlers: StreamHandlers,

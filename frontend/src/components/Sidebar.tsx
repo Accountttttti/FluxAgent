@@ -8,6 +8,9 @@ export function Sidebar() {
   const newSession = useChatStore((s) => s.newSession)
   const deleteSession = useChatStore((s) => s.deleteSession)
   const renameSession = useChatStore((s) => s.renameSession)
+  const dreaming = useChatStore((s) => s.dreaming)
+  const notice = useChatStore((s) => s.notice)
+  const dream = useChatStore((s) => s.dream)
   const [editingId, setEditingId] = useState<string | null>(null)
   const [draft, setDraft] = useState('')
 
@@ -26,6 +29,14 @@ export function Sidebar() {
       <button className="sidebar__new" onClick={newSession}>
         ＋ 新对话
       </button>
+      <button
+        className="sidebar__dream"
+        onClick={() => void dream()}
+        disabled={dreaming}
+      >
+        {dreaming ? '整理中…' : '整理记忆'}
+      </button>
+      {notice && <div className="sidebar__notice">{notice}</div>}
       <ul className="sidebar__list">
         {sessions.map((s) => (
           <li key={s.id} className="sidebar__row">

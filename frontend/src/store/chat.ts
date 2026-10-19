@@ -1,6 +1,6 @@
 import { create } from 'zustand'
 import { db } from '../lib/db'
-import { streamChat, type ApiMessage } from '../lib/api'
+import { streamChat, dream as dreamApi, type ApiMessage } from '../lib/api'
 import type { Message, Session } from '../types'
 
 function makeId(): string {
@@ -14,6 +14,8 @@ interface ChatState {
   streaming: boolean
   activeTool: string | null
   error: string | null
+  dreaming: boolean
+  notice: string | null
 
   init: () => Promise<void>
   newSession: () => Promise<void>
@@ -22,6 +24,7 @@ interface ChatState {
   deleteSession: (id: string) => Promise<void>
   renameSession: (id: string, title: string) => Promise<void>
   stop: () => void
+  dream: () => Promise<void>
 }
 
 let abortController: AbortController | null = null
@@ -33,6 +36,8 @@ export const useChatStore = create<ChatState>((set, get) => ({
   streaming: false,
   activeTool: null,
   error: null,
+  dreaming: false,
+  notice: null,
 
   init: async () => {
     const sessions = await db.sessions.orderBy('updatedAt').reverse().toArray()
@@ -184,5 +189,19 @@ export const useChatStore = create<ChatState>((set, get) => ({
 
   stop: () => {
     abortController?.abort()
+  },
+
+  dream: async () => {
+    if (get().dreaming) return
+    set({ dreaming: true, notice: null })
+    try {
+      const result = await dreamApi()
+      set({ notice: result })
+    } catch (err) {
+      set({ notice: err instanceof Error ? err.message : String(err) })
+    } finally {
+      set({ dreaming: false })
+      setTimeout(() => set({ notice: null }), 6000)
+    }
   },
 }))

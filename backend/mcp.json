@@ -1,0 +1,12 @@
+{
+  "mcpServers": {
+    "calc": {
+      "command": "python",
+      "args": ["mcp_servers/calc_server.py"]
+    },
+    "filesystem": {
+      "command": "npx",
+      "args": ["-y", "@modelcontextprotocol/server-filesystem", ".."]
+    }
+  }
+}
