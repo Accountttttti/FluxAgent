@@ -1,0 +1,12 @@
+# Claude Code 本地配置
+.claude/
+
+# 运行时用户数据 + 嵌套的「记忆 git」仓库（agent 自己版本管理记忆用，不进源码库）
+backend/memory/
+
+# 第三方参考源码（nanobot 原仓库，仅供对照学习，不进作品集）
+reference/
+
+# 系统文件
+Thumbs.db
+.DS_Store
