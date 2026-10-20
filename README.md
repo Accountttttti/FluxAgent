@@ -1,6 +1,6 @@
 # FluxAgent
 
-一个从零复刻 [HKUDS/nanobot](https://github.com/HKUDS/nanobot) 的个人 AI Agent（全栈）。
+参考 [HKUDS/nanobot](https://github.com/HKUDS/nanobot) 的个人 AI Agent（全栈）。
 
 一句话概括：像 ChatGPT 一样聊天，但 AI 不只是「说」——它能自己**调用工具**（查时间、跑 Python、写 Word/Excel、上网查资料、定时提醒……）、按 **SKILL 说明书**执行任务、**记住你的偏好**，还能开**子代理**并行干活。
 
