@@ -155,8 +155,10 @@ def run_subagent(task: str) -> str:
 def _stream_mock() -> Iterator[dict]:
     """没有 key 时的假流式：先演示一次工具调用，再流式输出文字。"""
     now = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-    yield {"tool": "get_current_time"}
+    yield {"tool": "get_current_time", "arguments": {}}
     time.sleep(0.4)
+    yield {"tool_result": "get_current_time", "result": now, "error": False}
+    time.sleep(0.2)
     reply = f"（mock 模式）我先调用了 get_current_time 工具，现在是 {now}。\n\n" + MOCK_REPLY
     for char in reply:
         yield {"delta": char}
@@ -168,7 +170,8 @@ def stream_chat(messages: list[dict]) -> Iterator[dict]:
 
     产出事件 dict：
     - {"delta": 文本片段}
-    - {"tool": 工具名}
+    - {"tool": 工具名, "arguments": 参数 dict}
+    - {"tool_result": 工具名, "result": 结果文本, "error": 是否出错}
     - {"done": True}
     """
     if not os.getenv("DEEPSEEK_API_KEY"):
@@ -228,12 +231,13 @@ def stream_chat(messages: list[dict]) -> Iterator[dict]:
         )
 
         for tc in ordered:
-            yield {"tool": tc["name"]}
             try:
                 args = json.loads(tc["arguments"]) if tc["arguments"] else {}
             except json.JSONDecodeError:
                 args = {}
+            yield {"tool": tc["name"], "arguments": args}
             result = TOOLS.execute(tc["name"], args)
+            yield {"tool_result": tc["name"], "result": result, "error": result.startswith("错误：")}
             conversation.append(
                 {"role": "tool", "tool_call_id": tc["id"], "content": result}
             )

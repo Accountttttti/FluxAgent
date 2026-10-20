@@ -1,7 +1,7 @@
 import { create } from 'zustand'
 import { db } from '../lib/db'
 import { streamChat, dream as dreamApi, type ApiMessage } from '../lib/api'
-import type { Message, Session } from '../types'
+import type { Message, Session, ToolCall } from '../types'
 
 function makeId(): string {
   return crypto.randomUUID()
@@ -12,7 +12,7 @@ interface ChatState {
   currentSessionId: string | null
   messages: Message[]
   streaming: boolean
-  activeTool: string | null
+  streamingMessageId: string | null
   error: string | null
   dreaming: boolean
   notice: string | null
@@ -34,7 +34,7 @@ export const useChatStore = create<ChatState>((set, get) => ({
   currentSessionId: null,
   messages: [],
   streaming: false,
-  activeTool: null,
+  streamingMessageId: null,
   error: null,
   dreaming: false,
   notice: null,
@@ -137,18 +137,25 @@ export const useChatStore = create<ChatState>((set, get) => ({
     set((state) => ({
       messages: [...state.messages, userMsg, assistantMsg],
       streaming: true,
+      streamingMessageId: assistantMsg.id,
       error: null,
     }))
 
     abortController = new AbortController()
     let buffer = ''
     let rafId: number | null = null
+    let timerId: number | null = null
+    let lastFlush = 0
+    // 最多每 50ms 刷一次屏，给 markdown 解析和布局留出时间（nanobot 的做法）
+    const FLUSH_INTERVAL_MS = 50
 
-    // rAF 批处理：把一帧内到达的 token 攒起来，每帧只更新一次界面
+    // 把攒起来的 token 一次性写进界面
     const flush = () => {
       rafId = null
+      timerId = null
       const text = buffer
       buffer = ''
+      lastFlush = performance.now()
       if (text) {
         set((state) => ({
           messages: state.messages.map((m) =>
@@ -158,16 +165,65 @@ export const useChatStore = create<ChatState>((set, get) => ({
       }
     }
 
+    // 50ms 节流调度：距上次刷屏不足 50ms 就用定时器等到点，否则下一帧就刷
+    const schedule = () => {
+      if (rafId !== null || timerId !== null) return
+      const delay = FLUSH_INTERVAL_MS - (performance.now() - lastFlush)
+      if (delay > 0) {
+        timerId = window.setTimeout(() => {
+          timerId = null
+          schedule()
+        }, delay)
+        return
+      }
+      rafId = requestAnimationFrame(flush)
+    }
+
     try {
       await streamChat(
         apiMessages,
         {
           onDelta: (delta) => {
-            if (get().activeTool) set({ activeTool: null })
             buffer += delta
-            if (rafId === null) rafId = requestAnimationFrame(flush)
+            schedule()
           },
-          onTool: (name) => set({ activeTool: name }),
+          onTool: (name, args) => {
+            const toolCall: ToolCall = {
+              id: makeId(),
+              name,
+              arguments:
+                args && Object.keys(args).length > 0
+                  ? JSON.stringify(args, null, 2)
+                  : undefined,
+              status: 'running',
+            }
+            set((state) => ({
+              messages: state.messages.map((m) =>
+                m.id === assistantMsg.id
+                  ? { ...m, toolCalls: [...(m.toolCalls ?? []), toolCall] }
+                  : m,
+              ),
+            }))
+          },
+          onToolResult: (result, error) => {
+            set((state) => ({
+              messages: state.messages.map((m) => {
+                if (m.id !== assistantMsg.id) return m
+                const calls = [...(m.toolCalls ?? [])]
+                let idx = -1
+                for (let i = calls.length - 1; i >= 0; i--) {
+                  if (calls[i].status === 'running') {
+                    idx = i
+                    break
+                  }
+                }
+                if (idx >= 0) {
+                  calls[idx] = { ...calls[idx], result, status: error ? 'error' : 'done' }
+                }
+                return { ...m, toolCalls: calls }
+              }),
+            }))
+          },
         },
         abortController.signal,
       )
@@ -177,13 +233,15 @@ export const useChatStore = create<ChatState>((set, get) => ({
       }
     } finally {
       if (rafId !== null) cancelAnimationFrame(rafId)
+      if (timerId !== null) clearTimeout(timerId)
       flush()
-      const finalContent =
-        get().messages.find((m) => m.id === assistantMsg.id)?.content ?? ''
-      await db.messages.add({ ...assistantMsg, content: finalContent })
+      const finalMsg = get().messages.find((m) => m.id === assistantMsg.id)
+      const finalContent = finalMsg?.content ?? ''
+      const finalToolCalls = finalMsg?.toolCalls
+      await db.messages.add({ ...assistantMsg, content: finalContent, toolCalls: finalToolCalls })
       await db.sessions.update(sessionId, { updatedAt: Date.now() })
       abortController = null
-      set({ streaming: false, activeTool: null })
+      set({ streaming: false, streamingMessageId: null })
     }
   },
 

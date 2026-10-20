@@ -7,6 +7,12 @@ backend/memory/
 # 第三方参考源码（nanobot 原仓库，仅供对照学习，不进作品集）
 reference/
 
+# 前端 UI 参考图片（个人素材，不进作品集）
+frontend/ui参考/
+
+# office 技能生成的演示文件（运行时产物）
+backend/generated/
+
 # 系统文件
 Thumbs.db
 .DS_Store

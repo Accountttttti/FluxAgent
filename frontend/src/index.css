@@ -1,16 +1,32 @@
 :root {
-  --bg: #f7f7f8;
-  --surface: #ffffff;
-  --border: #e5e5ea;
-  --text: #1c1c1e;
-  --text-secondary: #6e6e73;
-  --accent: #4f46e5;
-  --accent-hover: #4338ca;
-  --accent-bg: rgba(79, 70, 229, 0.1);
-  --user-bubble: #4f46e5;
-  --user-text: #ffffff;
-  --code-bg: #f6f8fa;
-  --radius: 12px;
+  /* 莫兰迪 × 马卡龙 粉色系 */
+  --cream: #f6efea;
+  --milk: #fbf7f5;
+  --blush: #e5c3c7; /* 豆沙粉 */
+  --rose: #d8a7b1; /* 灰粉 */
+  --mauve: #b39ba8; /* 灰紫 */
+  --sakura: #f8d5dd; /* 樱花粉（点缀） */
+  --lavender: #e4d7ec; /* 薰衣草（点缀） */
+  --peach: #fce0d4; /* 蜜桃（点缀） */
+
+  --text: #6b4a57;
+  --text-secondary: #a98b96;
+  --text-faint: #c0a8b0;
+
+  /* 玻璃拟态 */
+  --glass: rgba(255, 255, 255, 0.5);
+  --glass-strong: rgba(255, 255, 255, 0.66);
+  --glass-border: rgba(255, 255, 255, 0.65);
+  --blur: blur(22px) saturate(150%);
+
+  /* 柔和投影 */
+  --shadow-soft: 0 8px 32px rgba(179, 155, 168, 0.22);
+  --shadow-glow: 0 6px 24px rgba(216, 167, 177, 0.35);
+  --shadow-inset-soft: inset 0 2px 8px rgba(179, 155, 168, 0.12);
+
+  --radius-sm: 12px;
+  --radius: 18px;
+  --radius-lg: 24px;
 }
 
 * {
@@ -27,5 +43,31 @@ body {
   margin: 0;
   font-family: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
   color: var(--text);
-  background: var(--bg);
+  /* 梦核雾感背景：多层柔光球 + 奶油渐变 */
+  background:
+    radial-gradient(60% 50% at 16% 6%, rgba(248, 213, 221, 0.8) 0%, transparent 60%),
+    radial-gradient(55% 45% at 88% 16%, rgba(228, 215, 236, 0.75) 0%, transparent 55%),
+    radial-gradient(60% 55% at 78% 92%, rgba(252, 224, 212, 0.75) 0%, transparent 58%),
+    radial-gradient(50% 45% at 10% 88%, rgba(229, 195, 199, 0.65) 0%, transparent 55%),
+    linear-gradient(160deg, #f7f0ec 0%, #f3e9ec 50%, #f6efea 100%);
+  background-attachment: fixed;
+}
+
+/* 拟物化 → 柔光滚动条：粉色滑块，浅槽 */
+::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: linear-gradient(to bottom, #eec9d4, #ddb0c0);
+  border-radius: 6px;
+  border: 2px solid transparent;
+  background-clip: padding-box;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: linear-gradient(to bottom, #e2b2c3, #cd97aa);
+  background-clip: padding-box;
 }

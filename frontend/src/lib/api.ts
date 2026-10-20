@@ -7,7 +7,8 @@ export interface ApiMessage {
 
 export interface StreamHandlers {
   onDelta: (text: string) => void
-  onTool?: (name: string) => void
+  onTool?: (name: string, args?: Record<string, unknown>) => void
+  onToolResult?: (result: string, error: boolean) => void
 }
 
 export async function dream(): Promise<string> {
@@ -54,7 +55,9 @@ export async function streamChat(
       if (!line) continue
       const payload = JSON.parse(line.slice('data: '.length))
       if (payload.delta) handlers.onDelta(payload.delta)
-      else if (payload.tool) handlers.onTool?.(payload.tool)
+      else if (payload.tool) handlers.onTool?.(payload.tool, payload.arguments)
+      else if (payload.tool_result !== undefined)
+        handlers.onToolResult?.(payload.result, payload.error === true)
       else if (payload.error) throw new Error(payload.error)
     }
   }

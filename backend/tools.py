@@ -1,4 +1,5 @@
 import datetime
+import os
 import subprocess
 import sys
 from pathlib import Path
@@ -74,7 +75,10 @@ def _run_python(code: str) -> str:
             [sys.executable, "-c", code],
             capture_output=True,
             text=True,
+            encoding="utf-8",
+            errors="replace",
             timeout=10,
+            env={**os.environ, "PYTHONIOENCODING": "utf-8"},
         )
         output = (result.stdout or "") + (result.stderr or "")
         return output.strip() or "（代码执行完毕，没有输出）"
@@ -90,6 +94,7 @@ def _run_command(command: str) -> str:
             shell=True,
             capture_output=True,
             text=True,
+            errors="replace",
             timeout=30,
         )
         output = (result.stdout or "") + (result.stderr or "")
@@ -389,6 +394,22 @@ registry.register(
             "required": ["url"],
         },
         func=webtools.web_fetch,
+    )
+)
+
+registry.register(
+    Tool(
+        name="web_search",
+        description="联网搜索，返回若干结果的标题、链接和摘要。当用户问「最新的…」「查一下…」且你不知道答案、需要上网搜时调用。",
+        parameters={
+            "type": "object",
+            "properties": {
+                "query": {"type": "string", "description": "搜索关键词或短语"},
+                "max_results": {"type": "integer", "description": "返回结果数，默认 5"},
+            },
+            "required": ["query"],
+        },
+        func=webtools.web_search,
     )
 )
 

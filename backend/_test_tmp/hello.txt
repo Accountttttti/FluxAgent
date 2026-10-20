@@ -1,3 +1,0 @@
-hi
-line2
-appended

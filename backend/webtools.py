@@ -1,7 +1,7 @@
-"""网页抓取工具：读一个网址，抽出可读文本（复刻 nanobot 的 web_fetch，简化版）。
+"""网页工具：读网址抽正文（web_fetch）+ 联网搜索（web_search）。
 
-只做「读指定 URL 抽正文」，不做联网搜索（web_search 需要搜索来源，已砍掉）。
-用标准库 urllib + html.parser，不引入新依赖；最多读 2MB，输出截断到 8000 字符。
+web_fetch 用标准库 urllib + html.parser，不引入新依赖；最多读 2MB，输出截断到 8000 字符。
+web_search 用 DuckDuckGo（免费、无需 key），复刻 nanobot 的 _search_duckduckgo 简化版。
 """
 import re
 import urllib.request
@@ -80,3 +80,34 @@ def web_fetch(url: str) -> str:
     if looks_html:
         return _extract_text(text)[:MAX_OUTPUT]
     return text[:MAX_OUTPUT]
+
+
+SEARCH_MAX_RESULTS = 5
+
+
+def web_search(query: str, max_results: int = SEARCH_MAX_RESULTS) -> str:
+    """联网搜索，返回若干结果的「标题 / 链接 / 摘要」（DuckDuckGo，免费无需 key）。"""
+    try:
+        from ddgs import DDGS
+    except ImportError:
+        try:
+            from duckduckgo_search import DDGS
+        except ImportError:
+            return "错误：未安装搜索库，请运行 pip install ddgs"
+
+    try:
+        with DDGS(timeout=15) as ddgs:
+            results = ddgs.text(query, max_results=max_results)
+    except Exception as exc:
+        return f"错误：搜索失败：{exc}"
+
+    if not results:
+        return f"没有找到「{query}」的相关结果"
+
+    blocks = []
+    for r in results:
+        title = r.get("title", "").strip()
+        href = r.get("href", "").strip()
+        body = r.get("body", "").strip()
+        blocks.append(f"{title}\n{href}\n{body}")
+    return "\n\n".join(blocks)[:MAX_OUTPUT]
