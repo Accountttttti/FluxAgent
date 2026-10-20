@@ -15,6 +15,16 @@
   flex-shrink: 0;
 }
 
+/* 品牌标题：衬线体，编辑杂志风 */
+.sidebar__brand {
+  font-family: Georgia, 'Times New Roman', 'Songti SC', serif;
+  font-size: 20px;
+  font-weight: 400;
+  letter-spacing: -0.01em;
+  color: var(--text);
+  padding: 4px 8px 12px;
+}
+
 /* 主按钮（＋ 新对话）：墨色实心 */
 .sidebar__new {
   padding: 11px 14px;
@@ -198,8 +208,9 @@
   flex-shrink: 0;
 }
 .msg--user .msg__avatar {
-  background: var(--text);
-  color: #faf9f5;
+  background: transparent;
+  color: var(--text);
+  border: 1px solid var(--text);
 }
 .msg--assistant .msg__avatar {
   background: var(--accent);
@@ -419,23 +430,24 @@
   box-shadow: 0 0 0 3px var(--accent-soft);
 }
 
-/* 发送/停止按钮：墨色实心 */
+/* 发送/停止按钮：墨色描边，悬停填充 */
 .chat__input button {
   padding: 0 22px;
-  border: none;
+  border: 1px solid var(--text);
   border-radius: var(--radius);
-  background: var(--text);
-  color: #faf9f5;
+  background: transparent;
+  color: var(--text);
   font-size: 14px;
-  font-weight:500;
+  font-weight: 500;
   cursor: pointer;
-  transition: opacity 0.15s ease;
+  transition: background 0.15s ease, color 0.15s ease;
 }
 .chat__input button:hover {
-  opacity: 0.85;
+  background: var(--text);
+  color: #faf9f5;
 }
 .chat__input button:active {
-  opacity: 0.7;
+  opacity: 0.85;
 }
 
 /* ============ 语法高亮 token 颜色（暖中性） ============ */

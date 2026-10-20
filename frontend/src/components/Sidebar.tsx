@@ -26,6 +26,7 @@ export function Sidebar() {
 
   return (
     <aside className="sidebar">
+      <div className="sidebar__brand">FluxAgent</div>
       <button className="sidebar__new" onClick={newSession}>
         ＋ 新对话
       </button>
